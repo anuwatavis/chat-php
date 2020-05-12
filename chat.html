@@ -1,0 +1,153 @@
+<html>
+
+<link rel="stylesheet" type="text/css" href="style/main.css">
+
+<script src="jquery-3.4.1.min.js"></script>
+
+<script>
+    // This section is utils section
+    var getQueryString = function(){
+        var urlParams;
+        var match,
+            pl     = /\+/g,  // Regex for replacing addition symbol with a space
+            search = /([^&=]+)=?([^&]*)/g,
+            decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+            query  = window.location.search.substring(1);
+
+        urlParams = {};
+        while (match = search.exec(query))
+        urlParams[decode(match[1])] = decode(match[2]);
+
+        return urlParams;
+    };        
+
+</script>
+
+<script>
+
+    var reloadChat = function(){
+        //when retrieve data call function onChatLogReceived
+        var onChatLogReceived = function( listChatLog ){
+            window.renderChat( listChatLog );
+        }
+        
+        //load chat from DB
+        $.get("api/fetch_chat.php", function(response, status){ 
+            var listChatLog = JSON.parse(response);
+            onChatLogReceived(listChatLog);
+        });
+    };
+
+    /*
+        RenderChat use for render chat log from DB
+        -- Input:
+        listChatLog = [ {id, username, message} ]
+        -- Example input listChatLog:
+        {id: 1, username: "Dave", message: "Hi Mary !"}
+        -- How to call:
+        renderChat( [ {id: 1, username: "Dave", message: "Hi Mary !"}, {id: 2, username: "Mary", message: "Hi Dave !"}  ]  )
+        -- Result
+        Dave: Hi John
+        Dave: Hey Mary ! Long time no see
+        Mary: Hi Dave ! I miss you so much
+    */
+    var renderChat = function(listChatLog){
+        
+        // listChatLog are ORDER BY DESC
+
+        var chatLogContainer = window.document.getElementById("chat-log");
+        chatLogContainer.innerText = "";
+
+        for( var count = 0 ; count < listChatLog.length ; count++){
+            var chatLogInfo = listChatLog[count];
+            var userId = chatLogInfo["user_id"];
+            var userName = chatLogInfo["username"];
+            var message = chatLogInfo["message"];
+            var time = chatLogInfo["time"];
+
+            var messageContainer = window.document.createElement("div");
+            messageContainer.className = "chat-line";
+            messageContainer.innerText = userName + " : "+ message;
+            chatLogContainer.appendChild(messageContainer);
+        }
+    };
+
+    var chatInputChanged = function(event, inputElem){
+
+        if( event.keyCode === 13){
+            var inputValue = inputElem.value;
+
+            //Send input value into server side
+            $.post(
+            "api/send_chat.php", 
+            {   "user_id": window.global_user_id, 
+                "message": inputValue 
+            },
+            function(response, status){
+                reloadChat();
+            }
+        );
+
+            //Clear input
+            inputElem.value = "";
+        }
+    };
+
+    var loadUser = function( input_username ){
+
+        //when retrieve user information call function onUserReceived
+        var onUserReceived = function( userInformation ){
+            var username = userInformation.username;
+            window.global_user_id = userInformation.user_id;
+
+            //display user data
+            var userOwner = window.document.getElementById("chat-user-owner");
+            userOwner.innerText = username;
+        }
+
+        //retrieve user information
+        $.get("api/retrieve_user.php?username="+input_username, function(response, status){
+            var userInformation = JSON.parse(response);
+            onUserReceived(userInformation);
+        })
+        
+    };
+
+
+    //START HERE
+    window.onload = function(){
+        var params = getQueryString();
+        var username = params.username;
+        if( username ){
+            loadUser(username);
+            reloadChat();
+        }
+    };
+
+    var global_user_id = 1;
+
+</script>
+
+    
+<body>
+
+    <div class="chat-container">
+
+        <div class="chat-log-header-container">
+            <div id="chat-user-owner"></div>
+        </div>
+
+        <div class="chat-log-container">
+            <div id="chat-log"></div>
+        </div>
+
+        <div class="chat-log-input-container">
+            <textarea id="chat-input" onkeyup="chatInputChanged(event, this)" placeholder="Type a message and press Enter" /></textarea>
+        </div>
+
+    </div>
+
+
+</body>
+
+</html>

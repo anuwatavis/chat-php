@@ -1,0 +1,26 @@
+<html>
+
+<link rel="stylesheet" type="text/css" href="style/main.css" />
+
+<script>
+    var login = function(){
+        var username = window.document.getElementById("username-input").value;
+        window.location.href = "chat.html?username="+username;
+    }
+</script>
+
+<body>
+
+    <div>
+
+        <h1> DMT353 Chat</h1>
+        <hr style="margin:30px 0px; width: 80%; border: 1px solid #dddddd;" />
+        <input type="text" id="username-input" />
+        <button class="login-button" onclick="login()"> Login </button>
+
+    </div>
+
+</body>
+
+
+</html>
